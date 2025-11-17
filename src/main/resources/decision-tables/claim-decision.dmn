@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+             xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+             xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/"
+             xmlns:camunda="http://camunda.org/schema/1.0/dmn"
+             id="Definitions_ClaimDecision"
+             name="Claim Decision"
+             namespace="http://example.com/dmn">
+
+  <decision id="claim-decision"
+            name="Regras de aprovação de sinistro"
+            camunda:historyTimeToLive="180">
+    <decisionTable id="decisionTable_1" hitPolicy="FIRST">
+
+      <!-- INPUT 1: valor do sinistro -->
+      <input id="input_amount" label="Valor do sinistro">
+        <inputExpression id="inputExpression_amount" typeRef="number">
+          <text>amount</text>
+        </inputExpression>
+      </input>
+
+      <!-- INPUT 2: tipo de sinistro -->
+      <input id="input_type" label="Tipo de sinistro">
+        <inputExpression id="inputExpression_type" typeRef="string">
+          <text>type</text>
+        </inputExpression>
+      </input>
+
+      <!-- OUTPUT -->
+      <output id="output_autoApproved" name="autoApproved" typeRef="boolean"/>
+
+      <!-- Regra 1: AUTO até 5000 aprova automático -->
+      <rule id="rule_1">
+        <inputEntry id="rule_1_amount">
+          <text>&lt;= 5000</text>
+        </inputEntry>
+        <inputEntry id="rule_1_type">
+          <text>"AUTO"</text>
+        </inputEntry>
+        <outputEntry id="rule_1_output">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+
+      <!-- Regra 2: RESIDENCIAL até 3000 aprova automático -->
+      <rule id="rule_2">
+        <inputEntry id="rule_2_amount">
+          <text>&lt;= 3000</text>
+        </inputEntry>
+        <inputEntry id="rule_2_type">
+          <text>"RESIDENCIAL"</text>
+        </inputEntry>
+        <outputEntry id="rule_2_output">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+
+      <!-- Regra default: não aprova automático -->
+      <rule id="rule_default">
+        <inputEntry id="rule_default_amount">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="rule_default_type">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="rule_default_output">
+          <text>false</text>
+        </outputEntry>
+      </rule>
+
+    </decisionTable>
+  </decision>
+
+</definitions>

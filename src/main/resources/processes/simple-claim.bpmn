@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="Definitions_1"
+                  targetNamespace="http://example.com/camunda">
+
+  <bpmn:process id="simple-claim-process" name="Processo de Sinistro Simples" isExecutable="true" camunda:historyTimeToLive="180">
+
+    <bpmn:startEvent id="StartEvent_Claim" name="Receber Sinistro">
+      <bpmn:outgoing>Flow_Start_To_Rule</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:businessRuleTask id="BusinessRule_EvaluateClaim"
+                           name="Evaluate Claim"
+                           camunda:decisionRef="claim-decision"
+                           camunda:resultVariable="autoApproved"
+                           camunda:mapDecisionResult="singleEntry">
+
+      <bpmn:incoming>Flow_Start_To_Rule</bpmn:incoming>
+      <bpmn:outgoing>Flow_Rule_To_Gateway</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+
+    <bpmn:exclusiveGateway id="Gateway_AutoApproved" name="Auto aprovado?">
+      <bpmn:incoming>Flow_Rule_To_Gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_Gateway_To_Service</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Gateway_To_UserTask</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:serviceTask id="Service_RegisterPayment" name="Registrar pagamento"
+                      camunda:class="com.example.camundakotlinclaims.delegates.RegisterPaymentDelegate">
+      <bpmn:incoming>Flow_Gateway_To_Service</bpmn:incoming>
+      <bpmn:outgoing>Flow_Service_To_EndAuto</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:userTask id="UserTask_ManualReview" name="Revisão do analista">
+      <bpmn:incoming>Flow_Gateway_To_UserTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_UserTask_To_EndManual</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <bpmn:endEvent id="EndEvent_AutoApproved" name="Sinistro pago automaticamente">
+      <bpmn:incoming>Flow_Service_To_EndAuto</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:endEvent id="EndEvent_Manual" name="Sinistro finalizado manualmente">
+      <bpmn:incoming>Flow_UserTask_To_EndManual</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Flows -->
+    <bpmn:sequenceFlow id="Flow_Start_To_Rule"
+                       sourceRef="StartEvent_Claim"
+                       targetRef="BusinessRule_EvaluateClaim"/>
+
+    <bpmn:sequenceFlow id="Flow_Rule_To_Gateway"
+                       sourceRef="BusinessRule_EvaluateClaim"
+                       targetRef="Gateway_AutoApproved"/>
+
+    <bpmn:sequenceFlow id="Flow_Gateway_To_Service"
+                       sourceRef="Gateway_AutoApproved"
+                       targetRef="Service_RegisterPayment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${autoApproved}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_Gateway_To_UserTask"
+                       sourceRef="Gateway_AutoApproved"
+                       targetRef="UserTask_ManualReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${!autoApproved}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="Flow_Service_To_EndAuto"
+                       sourceRef="Service_RegisterPayment"
+                       targetRef="EndEvent_AutoApproved"/>
+
+    <bpmn:sequenceFlow id="Flow_UserTask_To_EndManual"
+                       sourceRef="UserTask_ManualReview"
+                       targetRef="EndEvent_Manual"/>
+
+  </bpmn:process>
+
+</bpmn:definitions>
